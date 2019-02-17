@@ -77,12 +77,12 @@ def syspatch_installed(module):
     """Get list of installed patches"""
     cmd = [SYSPATCH_CMD, '-l']
     output = run_command(module, cmd)
-    return output, get_nonempty_lines(out)
+    return output, get_nonempty_lines(output['out'])
 
 def syspatch_available(module):
     cmd = [SYSPATCH_CMD, '-c']
     output = run_command(module, cmd)
-    return output, get_nonempty_lines(out)
+    return output, get_nonempty_lines(output['out'])
 
 def syspatch_latest(module):
     cmd = [SYSPATCH_CMD]
