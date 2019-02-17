@@ -93,7 +93,7 @@ def syspatch_revert_last(module):
 
 def syspatch_revert_all(module):
     cmd = [SYSPATCH_CMD, '-R']
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = run_command(module, cmd)
     return
 
 def run_module():
