@@ -101,7 +101,7 @@ def syspatch_revert_all(module):
 
 def run_module():
     module_args = dict(
-        state=dict(type='str', required=True, default='latest', choices=['latest', 'revert', 'revert_all']),
+        state=dict(type='str', required=True, choices=['latest', 'revert', 'revert_all']),
     )
 
     result = dict(
