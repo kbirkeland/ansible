@@ -67,7 +67,8 @@ def run_command(module, cmd):
     rc, out, err = module.run_command(cmd)
     module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
-        module.fail_json(msg='Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err))
+        if 'need root privileges' in err:
+            module.fail_json(msg='Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err))
     return (rc, out, err)
 
 def syspatch_installed(module):
@@ -115,13 +116,13 @@ def run_module():
 
     if module.check_mode:
         if module.params['state'] == 'latest':
-            result['available_patches'] = syspatch_available(module)
+            available_patches = syspatch_available(module)
             result['installed_patches'] = available_patches
         elif module.params['state'] == 'revert_all':
-            result['installed_patches'] = syspatch_installed(module)
+            installed_patches = syspatch_installed(module)
             result['reverted_patches'] = installed_patches
         elif module.params['state'] == 'revert':
-            result['installed_patches'] = syspatch_installed(module)
+            installed_patches = syspatch_installed(module)
             result['reverted_patches'] = [installed_patches[-1]]
         else:
             module.fail_json(msg='unsupported state {}'.format(module.params['state']))
