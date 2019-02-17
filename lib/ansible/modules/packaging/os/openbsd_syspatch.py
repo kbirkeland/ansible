@@ -67,9 +67,7 @@ def run_command(module, cmd):
     rc, out, err = module.run_command(cmd)
     module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
-        module.fail_json({
-            'msg': 'Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err),
-        })
+        module.fail_json(msg='Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err))
     return (rc, out, err)
 
 def syspatch_installed(module):
@@ -126,8 +124,7 @@ def run_module():
             result['installed_patches'] = syspatch_installed(module)
             result['reverted_patches'] = [installed_patches[-1]]
         else:
-            result['msg'] = 'unsupported state {}'.format(module.params['state'])
-            module.fail_json(**result)
+            module.fail_json(msg='unsupported state {}'.format(module.params['state']))
         return result
 
     if module.params['state'] == 'latest':
@@ -149,8 +146,7 @@ def run_module():
             result['changed'] = True
             result['reverted_patches'] = [installed_patches[-1]]
     else:
-        result['msg'] = 'unsupported state {}'.format(module.params['state'])
-        module.fail_json(**result)
+        module.fail_json(msg='unsupported state {}'.format(module.params['state']))
 
     module.exit_json(**result)
 
