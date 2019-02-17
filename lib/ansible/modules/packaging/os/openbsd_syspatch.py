@@ -120,7 +120,7 @@ def run_module():
         if module_args['state'] == 'latest':
             result['available_patches'] = syspatch_available(module)
             result['installed_patches'] = available_patches
-        elif module_args['state'] == 'none':
+        elif module_args['state'] == 'revert_all':
             result['installed_patches'] = syspatch_installed(module)
             result['reverted_patches'] = installed_patches
         elif module_args['state'] == 'revert':
@@ -134,7 +134,7 @@ def run_module():
             syspatch_latest(module)
             result['changed'] = True
             result['installed_patches'] = available_patches
-    elif module_args['state'] == 'none':
+    elif module_args['state'] == 'revert_all':
         installed_patches = syspatch_installed(module)
         if installed_patches:
             syspatch_revert_all(module)
