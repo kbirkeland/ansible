@@ -1,7 +1,10 @@
 #!/usr/bin/python
 
 # Copyright: (c) 2018, Terry Jones <terry.jones@example.org>
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+# GNU General Public License v3.0+
+# (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+from ansible.module_utils.basic import AnsibleModule
 
 ANSIBLE_METADATA = {
     'metadata_version': '1.0',
@@ -53,9 +56,8 @@ outputs:
     description: full command outputs
 '''
 
-from ansible.module_utils.basic import AnsibleModule
-
 SYSPATCH_CMD = 'syspatch'
+
 
 def get_nonempty_lines(s):
     """Return a list of non-empty lines
@@ -65,13 +67,17 @@ def get_nonempty_lines(s):
     """
     return [line.strip() for line in s.split() if line]
 
+
 def run_command(module, cmd):
     rc, out, err = module.run_command(cmd)
     module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
         if 'need root privileges' in err:
-            module.fail_json(msg='Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err))
+            module.fail_json(
+                    msg='Failed to run command `{command}`: {err!r}'.format(
+                        command=' '.join(cmd), err=err))
     return {'cmd': cmd, 'rc': rc, 'out': out, 'err': err}
+
 
 def syspatch_installed(module):
     """Get list of installed patches"""
@@ -79,29 +85,36 @@ def syspatch_installed(module):
     output = run_command(module, cmd)
     return output, get_nonempty_lines(output['out'])
 
+
 def syspatch_available(module):
     cmd = [SYSPATCH_CMD, '-c']
     output = run_command(module, cmd)
     return output, get_nonempty_lines(output['out'])
+
 
 def syspatch_latest(module):
     cmd = [SYSPATCH_CMD]
     output = run_command(module, cmd)
     return output
 
+
 def syspatch_revert_last(module):
     cmd = [SYSPATCH_CMD, '-r']
     output = run_command(module, cmd)
     return output
+
 
 def syspatch_revert_all(module):
     cmd = [SYSPATCH_CMD, '-R']
     output = run_command(module, cmd)
     return output
 
+
 def run_module():
     module_args = dict(
-        state=dict(type='str', required=True, choices=['latest', 'revert', 'revert_all']),
+        state=dict(
+            type='str', required=True,
+            choices=['latest', 'revert', 'revert_all']),
     )
 
     result = dict(
@@ -131,7 +144,8 @@ def run_module():
             result['outputs'].append(output)
             result['reverted_patches'] = [installed_patches[-1]]
         else:
-            module.fail_json(msg='unsupported state {}'.format(module.params['state']))
+            module.fail_json(
+                msg='unsupported state {}'.format(module.params['state']))
         return result
 
     if module.params['state'] == 'latest':
@@ -159,12 +173,15 @@ def run_module():
             result['changed'] = True
             result['reverted_patches'] = [installed_patches[-1]]
     else:
-        module.fail_json(msg='unsupported state {}'.format(module.params['state']))
+        module.fail_json(
+            msg='unsupported state {}'.format(module.params['state']))
 
     module.exit_json(**result)
 
+
 def main():
     run_module()
+
 
 if __name__ == '__main__':
     main()
