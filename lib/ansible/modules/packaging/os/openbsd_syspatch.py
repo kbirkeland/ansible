@@ -65,6 +65,7 @@ def get_nonempty_lines(s):
 
 def run_command(module, cmd):
     rc, out, err = module.run_command(cmd)
+    module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
         module.fail_json({
             'installed_patches': [], 
@@ -117,35 +118,41 @@ def run_module():
     )
 
     if module.check_mode:
-        if module_args['state'] == 'latest':
+        if module.params['state'] == 'latest':
             result['available_patches'] = syspatch_available(module)
             result['installed_patches'] = available_patches
-        elif module_args['state'] == 'revert_all':
+        elif module.params['state'] == 'revert_all':
             result['installed_patches'] = syspatch_installed(module)
             result['reverted_patches'] = installed_patches
-        elif module_args['state'] == 'revert':
+        elif module.params['state'] == 'revert':
             result['installed_patches'] = syspatch_installed(module)
             result['reverted_patches'] = [installed_patches[-1]]
+        else:
+            result['msg'] = 'unsupported state {}'.format(module.params['state'])
+            module.fail_json(**result)
         return result
 
-    if module_args['state'] == 'latest':
+    if module.params['state'] == 'latest':
         available_patches = syspatch_available(module)
         if available_patches:
             syspatch_latest(module)
             result['changed'] = True
             result['installed_patches'] = available_patches
-    elif module_args['state'] == 'revert_all':
+    elif module.params['state'] == 'revert_all':
         installed_patches = syspatch_installed(module)
         if installed_patches:
             syspatch_revert_all(module)
             result['changed'] = True
             result['reverted_patches'] = installed_patches
-    elif module_args['state'] == 'revert':
+    elif module.params['state'] == 'revert':
         installed_patches = syspatch_installed(module)
         if installed_patches:
-            syspatch_revert(module)
+            syspatch_revert_last(module)
             result['changed'] = True
             result['reverted_patches'] = [installed_patches[-1]]
+    else:
+        result['msg'] = 'unsupported state {}'.format(module.params['state'])
+        module.fail_json(**result)
 
     module.exit_json(**result)
 
