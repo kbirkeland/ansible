@@ -49,6 +49,8 @@ installed_patches:
     description: patches installed
 reverted_patches:
     description: patches reverted
+outputs:
+    description: full command outputs
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -69,33 +71,33 @@ def run_command(module, cmd):
     if rc != 0:
         if 'need root privileges' in err:
             module.fail_json(msg='Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err))
-    return (rc, out, err)
+    return {'cmd': cmd, 'rc': rc, 'out': out, 'err': err}
 
 def syspatch_installed(module):
     """Get list of installed patches"""
     cmd = [SYSPATCH_CMD, '-l']
-    rc, out, err = run_command(module, cmd)
-    return get_nonempty_lines(out)
+    output = run_command(module, cmd)
+    return output, get_nonempty_lines(out)
 
 def syspatch_available(module):
     cmd = [SYSPATCH_CMD, '-c']
-    rc, out, err = run_command(module, cmd)
-    return get_nonempty_lines(out)
+    output = run_command(module, cmd)
+    return output, get_nonempty_lines(out)
 
 def syspatch_latest(module):
     cmd = [SYSPATCH_CMD]
-    rc, out, err = run_command(module, cmd)
-    return
+    output = run_command(module, cmd)
+    return output
 
 def syspatch_revert_last(module):
     cmd = [SYSPATCH_CMD, '-r']
-    rc, out, err = run_command(module, cmd)
-    return
+    output = run_command(module, cmd)
+    return output
 
 def syspatch_revert_all(module):
     cmd = [SYSPATCH_CMD, '-R']
-    rc, out, err = run_command(module, cmd)
-    return
+    output = run_command(module, cmd)
+    return output
 
 def run_module():
     module_args = dict(
@@ -107,6 +109,7 @@ def run_module():
         installed_patches=[],
         reverted_patches=[],
         msg=[],
+        outputs=[],
     )
 
     module = AnsibleModule(
@@ -116,34 +119,43 @@ def run_module():
 
     if module.check_mode:
         if module.params['state'] == 'latest':
-            available_patches = syspatch_available(module)
+            output, available_patches = syspatch_available(module)
+            result['outputs'].append(output)
             result['installed_patches'] = available_patches
         elif module.params['state'] == 'revert_all':
-            installed_patches = syspatch_installed(module)
+            output, installed_patches = syspatch_installed(module)
+            result['outputs'].append(output)
             result['reverted_patches'] = installed_patches
         elif module.params['state'] == 'revert':
-            installed_patches = syspatch_installed(module)
+            output, installed_patches = syspatch_installed(module)
+            result['outputs'].append(output)
             result['reverted_patches'] = [installed_patches[-1]]
         else:
             module.fail_json(msg='unsupported state {}'.format(module.params['state']))
         return result
 
     if module.params['state'] == 'latest':
-        available_patches = syspatch_available(module)
+        output, available_patches = syspatch_available(module)
+        result['outputs'].append(output)
         if available_patches:
-            syspatch_latest(module)
+            output = syspatch_latest(module)
+            result['outputs'].append(output)
             result['changed'] = True
             result['installed_patches'] = available_patches
     elif module.params['state'] == 'revert_all':
-        installed_patches = syspatch_installed(module)
+        output, installed_patches = syspatch_installed(module)
+        result['outputs'].append(output)
         if installed_patches:
-            syspatch_revert_all(module)
+            output = syspatch_revert_all(module)
+            result['outputs'].append(output)
             result['changed'] = True
             result['reverted_patches'] = installed_patches
     elif module.params['state'] == 'revert':
-        installed_patches = syspatch_installed(module)
+        output, installed_patches = syspatch_installed(module)
+        result['outputs'].append(output)
         if installed_patches:
-            syspatch_revert_last(module)
+            output = syspatch_revert_last(module)
+            result['outputs'].append(output)
             result['changed'] = True
             result['reverted_patches'] = [installed_patches[-1]]
     else:
