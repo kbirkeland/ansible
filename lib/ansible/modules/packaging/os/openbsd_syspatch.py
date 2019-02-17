@@ -42,13 +42,63 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
+msg:
+    description: module message
 stdout:
     description: stdout from syspatch(8)
 stderr:
     description: stderr from syspatch(8)
+rc:
+    description: return code from syspatch(8)
 '''
 
 from ansible.module_utils.basic import AnsibleModule
+
+SYSPATCH_CMD = 'syspatch'
+
+def get_nonempty_lines(s):
+    """Return a list of non-empty lines
+
+    :arg s: string to split
+    :returns: List of nonempty lines
+    """
+    return [line.strip() for line in s.split() if line]
+
+def run_command(module, cmd):
+    rc, out, err = module.run_command(cmd)
+    if rc != 0:
+        module.fail_json({
+            'rc': rc, 
+            'stdout': out, 
+            'stderr': err, 
+            'msg': 'Failed to run command `{command}`'.format(command=' '.join(cmd)),
+        })
+    return (rc, out, err)
+
+def syspatch_installed(module):
+    """Get list of installed patches"""
+    cmd = [SYSPATCH_CMD, '-l']
+    rc, out, err = module.run_command(cmd)
+    return get_nonempty_lines(out)
+
+def syspatch_available(module):
+    cmd = [SYSPATCH_CMD, '-c']
+    rc, out, err = module.run_command(cmd)
+    return get_nonempty_lines(out)
+
+def syspatch_latest(module):
+    cmd = [SYSPATCH_CMD]
+    rc, out, err = module.run_command(cmd)
+    return
+
+def syspatch_revert_last(module):
+    cmd = [SYSPATCH_CMD, '-r']
+    rc, out, err = module.run_command(cmd)
+    return
+
+def syspatch_revert_all(module):
+    cmd = [SYSPATCH_CMD, '-R']
+    return
 
 def run_module():
     module_args = dict(
