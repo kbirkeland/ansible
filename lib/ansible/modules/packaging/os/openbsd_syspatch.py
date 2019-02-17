@@ -24,7 +24,8 @@ options:
     state:
         description:
             - C(latest) will update to the latest patch available
-            - C(absent) will revert all patches
+            - C(revert) will revert all patches
+            - C(revert_all) will revert all patches
             - Default is C(latest)
         required: true
 
@@ -44,12 +45,10 @@ EXAMPLES = '''
 RETURN = '''
 msg:
     description: module message
-stdout:
-    description: stdout from syspatch(8)
-stderr:
-    description: stderr from syspatch(8)
-rc:
-    description: return code from syspatch(8)
+installed_patches:
+    description: patches installed
+reverted_patches:
+    description: patches reverted
 '''
 
 from ansible.module_utils.basic import AnsibleModule
@@ -68,9 +67,8 @@ def run_command(module, cmd):
     rc, out, err = module.run_command(cmd)
     if rc != 0:
         module.fail_json({
-            'rc': rc, 
-            'stdout': out, 
-            'stderr': err, 
+            'installed_patches': [], 
+            'reverted_patches': [], 
             'msg': 'Failed to run command `{command}`'.format(command=' '.join(cmd)),
         })
     return (rc, out, err)
@@ -98,57 +96,57 @@ def syspatch_revert_last(module):
 
 def syspatch_revert_all(module):
     cmd = [SYSPATCH_CMD, '-R']
+    rc, out, err = module.run_command(cmd)
     return
 
 def run_module():
     module_args = dict(
-        state=dict(type='str', required=True, default='latest'),
+        state=dict(type='str', required=True, default='latest', choices=['latest', 'revert', 'revert_all']),
     )
 
-    # seed the result dict in the object
-    # we primarily care about changed and state
-    # change is if this module effectively modified the target
-    # state will include any data that you want your module to pass back
-    # for consumption, for example, in a subsequent task
     result = dict(
         changed=False,
-        stdout='',
-        stdin=''
+        installed_patches=[],
+        reverted_patches=[],
+        msg=[],
     )
 
-    # the AnsibleModule object will be our abstraction working with Ansible
-    # this includes instantiation, a couple of common attr would be the
-    # args/params passed to the execution, as well as if the module
-    # supports check mode
     module = AnsibleModule(
         argument_spec=module_args,
         supports_check_mode=True
     )
 
-    # if the user is working with this module in only check mode we do not
-    # want to make any changes to the environment, just return the current
-    # state with no modifications
     if module.check_mode:
+        if module_args['state'] == 'latest':
+            result['available_patches'] = syspatch_available(module)
+            result['installed_patches'] = available_patches
+        elif module_args['state'] == 'none':
+            result['installed_patches'] = syspatch_installed(module)
+            result['reverted_patches'] = installed_patches
+        elif module_args['state'] == 'revert':
+            result['installed_patches'] = syspatch_installed(module)
+            result['reverted_patches'] = [installed_patches[-1]]
         return result
 
-    # manipulate or modify the state as needed (this is going to be the
-    # part where your module will do what it needs to do)
-    result['original_message'] = module.params['name']
-    result['message'] = 'goodbye'
+    if module_args['state'] == 'latest':
+        available_patches = syspatch_available(module)
+        if available_patches:
+            syspatch_latest(module)
+            result['changed'] = True
+            result['installed_patches'] = available_patches
+    elif module_args['state'] == 'none':
+        installed_patches = syspatch_installed(module)
+        if installed_patches:
+            syspatch_revert_all(module)
+            result['changed'] = True
+            result['reverted_patches'] = installed_patches
+    elif module_args['state'] == 'revert':
+        installed_patches = syspatch_installed(module)
+        if installed_patches:
+            syspatch_revert(module)
+            result['changed'] = True
+            result['reverted_patches'] = [installed_patches[-1]]
 
-    # use whatever logic you need to determine whether or not this module
-    # made any modifications to your target
-    if module.params['new']:
-        result['changed'] = True
-
-    # during the execution of the module, if there is an exception or a
-    # conditional state that effectively causes a failure, run
-    # AnsibleModule.fail_json() to pass in the message and the result
-    if module.params['name'] == 'fail me':
-        module.fail_json(msg='You requested this to fail', **result)
-
-    # in the event of a successful module execution, you will want to
-    # simple AnsibleModule.exit_json(), passing the key/value results
     module.exit_json(**result)
 
 def main():
