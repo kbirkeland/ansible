@@ -68,31 +68,29 @@ def run_command(module, cmd):
     module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
         module.fail_json({
-            'installed_patches': [], 
-            'reverted_patches': [], 
-            'msg': 'Failed to run command `{command}`'.format(command=' '.join(cmd)),
+            'msg': 'Failed to run command `{command}`: {err!r}'.format(command=' '.join(cmd), err=err),
         })
     return (rc, out, err)
 
 def syspatch_installed(module):
     """Get list of installed patches"""
     cmd = [SYSPATCH_CMD, '-l']
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = run_command(cmd)
     return get_nonempty_lines(out)
 
 def syspatch_available(module):
     cmd = [SYSPATCH_CMD, '-c']
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = run_command(cmd)
     return get_nonempty_lines(out)
 
 def syspatch_latest(module):
     cmd = [SYSPATCH_CMD]
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = run_command(cmd)
     return
 
 def syspatch_revert_last(module):
     cmd = [SYSPATCH_CMD, '-r']
-    rc, out, err = module.run_command(cmd)
+    rc, out, err = run_command(cmd)
     return
 
 def syspatch_revert_all(module):
