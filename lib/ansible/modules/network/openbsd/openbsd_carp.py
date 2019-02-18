@@ -117,10 +117,12 @@ def _create_carp_config(module)
 
 
 def save_carp_config(module):
-    carp
+    carp_config = _create_carp_config(module)
     with open('/etc/hostname.{}'.format(module.params.get('carpdev')), 'w') as f:
-        f.write(
+        f.write(carp_config)
 
+def restart_interface(module):
+    run_command(['netstart', module.params.get('carpdev')])
 
 def run_module():
     module_args = dict(
