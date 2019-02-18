@@ -81,14 +81,14 @@ def run_command(module, cmd):
     module.log('ran {} got ({!r}, {!r}, {!r})'.format(cmd, rc, out, err))
     if rc != 0:
         module.fail_json(
-                msg='Failed to run command `{command}`: {err!r}'.format(
-                    command=' '.join(cmd), err=err))
+            msg='Failed to run command `{command}`: {err!r}'.format(
+            command=' '.join(cmd), err=err))
     return {'cmd': cmd, 'rc': rc, 'out': out, 'err': err}
 
 
-def _create_pfsync_config(module)
-   intf_str = 'inet' #FIXME
-return inf_str
+def _create_pfsync_config(module):
+    intf_str = 'inet' #FIXME
+    return intf_str
 
 
 def save_pfsync_config(module):
@@ -98,7 +98,7 @@ def save_pfsync_config(module):
 
 
 def restart_interface(module):
-    run_command(['netstart', module.params.get('pfsync')])
+    run_command(module, ['netstart', module.params.get('pfsync')])
 
 
 def run_module():
@@ -106,12 +106,12 @@ def run_module():
         name=dict(type='str', required=True),
         syncdev=dict(type='str', required=False),
         defer=dict(type='bool', default=False),
-        maxudp:dict(type='int', default=False),
-        syncpeer:dict(type='str', default=False),
+        maxudp=dict(type='int', default=False),
+        syncpeer=dict(type='str', default=False),
     )
 
     result = dict(
-        changed=False
+        changed=False,
         msg=[],
     )
 
