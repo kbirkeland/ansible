@@ -31,10 +31,14 @@ options:
             - Valid keys are 'vhid', 'advbase', and 'advskew'
             - The key 'vhid' is required
         required: true
-    carpdev:
+    name:
         description:
             - Name of the carp interface
             - Must be in the format `carp<int>`
+        required: true
+    carpdev:
+        description:
+            - Name of the physical interface
         required: true
     preempt:
         description:
@@ -89,7 +93,7 @@ def run_command(module, cmd):
     return {'cmd': cmd, 'rc': rc, 'out': out, 'err': err}
 
 
-def _create_carp_config(module)
+def _create_carp_config(module):
     node_strs = []
     for node in module.params['carpnodes']:
         try:
@@ -110,19 +114,39 @@ def _create_carp_config(module)
     # FIXME verify IP address
     
     intf_str = 'inet {address} carpnodes {carpnodes} carpdev {carpdev}'.format(
-        module.params['address'],
-        node_str,
-        module.params['carpdev'])
+        address=module.params['address'],
+        carpnodes=node_str,
+        carpdev=module.params['carpdev'])
     return intf_str
 
 
 def save_carp_config(module):
-    carp_config = _create_carp_config(module)
-    with open('/etc/hostname.{}'.format(module.params.get('carpdev')), 'w') as f:
-        f.write(carp_config)
+    """Saves CARP config if changed
+    Returns True if changed, False if unchanged
+    """
+    config_filename = '/etc/hostname.{}'.format(module.params.get('name'))
+    new_carp_config = _create_carp_config(module)
+    try:
+        current_carp_config = open(config_filename).read()
+    except IOError:
+        current_carp_config = ''
+
+    if new_carp_config.strip() == current_carp_config.strip():
+        return False
+    
+    try:
+        with open(config_filename, 'w') as f:
+            f.write(new_carp_config)
+    except IOError as e:
+        module.fail_json(msg='Failed to open {config_filename} for writing: {error}'.format(
+            config_filename=config_filename,
+            error=str(e),
+        ))
+
+    return True
 
 def restart_interface(module):
-    run_command(['netstart', module.params.get('carpdev')])
+    run_command(module, ['netstart', module.params.get('name')])
 
 def run_module():
     module_args = dict(
@@ -147,6 +171,9 @@ def run_module():
     if module.check_mode:
         #FIXME
         pass
+
+    if save_carp_config(module):
+        restart_interface(module)
 
 
     module.exit_json(**result)
